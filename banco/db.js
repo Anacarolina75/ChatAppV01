@@ -58,6 +58,6 @@ async function adicionarMensagem(servidor, contato, mensagem) {
     console.error('Erro ao adicionar mensagem:', error);
   }
 }
-
+ 
 
 module.exports = db;
