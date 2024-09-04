@@ -9,7 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "axios": "^1.7.7",
     "body-parser": "^1.20.2",
@@ -22,5 +21,14 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anacarolina75/ChatAppV01.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Anacarolina75/ChatAppV01/issues"
+  },
+  "homepage": "https://github.com/Anacarolina75/ChatAppV01#readme",
+  "description": ""
 }

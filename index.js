@@ -5,6 +5,10 @@ const socketIo = require('socket.io');
 const dotenv = require('dotenv');
 const http = require('http');
 const admin = require('firebase-admin');
+const webhook = require('./routes/webhooks')
+
+app.use(bodyParser.json());
+dotenv.config();
 
 // Importando e utilizando as rotas
 app.use('/auths', require('./routes/auths'));
@@ -15,30 +19,14 @@ app.use('/mensagens', require('./routes/mensagens'));
 app.use('/tags', require('./routes/tags'));
 app.use('/atendentes', require('./routes/atendentes'));
 
-app.use(bodyParser.json());
-dotenv.config();
+
 
 const server = http.createServer(app);
+
 const io = socketIo(server, {
   cors: {
     origin: 'http://localhost:8000', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  }
-});
-
-
-app.post('/webhooks', async (req, res) => {
-  const mensagem = req.body.mensagem;
-  const servidor = req.body.servidor;
-  const contato = req.body.contato;
-
-  console.log(`Servidor: ${servidor}, Contato: ${contato}, Mensagem: ${mensagem}`);
-
-  try {
-    await adicionarMensagem(servidor, contato, mensagem);
-    res.status(200).send('Mensagem processada com sucesso!');
-  } catch (error) {
-    res.status(500).send('Erro ao processar a mensagem.');
   }
 });
 

@@ -1,5 +1,5 @@
 // /middlewares/authMiddleware.js
-const admin = require('../firebase/firebase');
+/*const admin = require('../firebase/firebase');
 
 const authenticate = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -18,3 +18,4 @@ const authenticate = async (req, res, next) => {
 };
 
 module.exports = authenticate;
+*/

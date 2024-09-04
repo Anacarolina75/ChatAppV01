@@ -1,18 +1,15 @@
-// /routes/webhook.js
 const express = require('express');
 const router = express.Router();
-const db = require('../banco/db');
-const axios = require('axios');
 
-// Endpoint para receber webhooks do WhatsApp
-router.post('/webhooks', (req, res) => {
+// Rota para o webhook
+router.post('/', (req, res) => {
+  const data = req.body; // Captura o payload enviado
+  console.log('Webhook recebido:', data);
+  res.sendStatus(200); // Retorna um status 200 (OK) para confirmar o recebimento
+});
 
-  const mensagem = req.body.mensagem;
-  const servidor = req.body.servidor;
-  const contato = req.body.contato;
+module.exports = router;
 
-
-  console.log(servidor + contato + mensagem);
 
   /* identificar o servidor atraves do numero que vem na const servidor e verificar se nesse servidor existe cadastrado o numero originario
     se já existir (contato) no servidor vou adicionar a mensagem ao contato
@@ -50,6 +47,6 @@ router.post('/webhooks', (req, res) => {
   };
 });
 */
-})
+
 
 module.exports = router;

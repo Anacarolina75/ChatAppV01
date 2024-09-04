@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../banco/db');
-const authenticate = require('../middlewares/middlewares');
+//const authenticate = require('../middlewares/middlewares');
 
 // Listar todos os atendentes
 router.get('/', (req, res) => {
@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
 });
 
 // Atribuir uma conversa a um atendente
-router.put('/api/conversas/:id/atribuir', authenticate, (req, res) => {
+router.put('/api/conversas/:id/atribuir', (req, res) => {
   const { id } = req.params;
   const { idAtendente } = req.body;
 

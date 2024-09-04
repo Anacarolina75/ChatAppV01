@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../banco/db');
-const authenticate = require('../middlewares/middlewares');
+//const authenticate = require('../middlewares/middlewares');
 
 // Listar todas as conversas
-router.get('/', authenticate, (req, res) => {
+router.get('/', (req, res) => {
   db.query('SELECT * FROM conversas', (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
@@ -25,7 +25,7 @@ router.post('/', (req, res) => {
 
 
 // Atribuir uma conversa a um atendente
-router.put('/:id/atribuir', authenticate, (req, res) => {
+router.put('/:id/atribuir', (req, res) => {
   const { id } = req.params;
   const { idAtendente } = req.body;
 
