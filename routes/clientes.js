@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // Arquivo para centralizar a conexão com o banco de dados
+const db = require('../banco/db'); // Arquivo para centralizar a conexão com o banco de dados
 
 // Listar todos os clientes
 router.get('/', (req, res) => {

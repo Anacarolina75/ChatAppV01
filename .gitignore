@@ -1,0 +1,33 @@
+# Node modules
+node_modules/
+
+# Dependências do NPM
+package-lock.json
+ServiceAccountKey.json
+yarn.lock
+
+# Arquivo de configuração do ambiente
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema de build
+build/
+dist/
+coverage/
+
+# Diretórios temporários
+tmp/
+temp/
+
+# IDEs e editores
+.vscode/
+.idea/
+
+# Arquivos gerados
+*.tgz
+*.zip
+*.tar

@@ -1,14 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const db = require('../banco/db');
+const authenticate = require('../middlewares/middlewares');
 
 // Listar todas as conversas
-router.get('/', (req, res) => {
-  const query = 'SELECT * FROM conversas';
-  db.query(query, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+router.get('/', authenticate, (req, res) => {
+  db.query('SELECT * FROM conversas', (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
@@ -22,6 +20,24 @@ router.post('/', (req, res) => {
       return res.status(500).json({ error: err.message });
     }
     res.json({ id: results.insertId, idCliente, idAtendente });
+  });
+});
+
+
+// Atribuir uma conversa a um atendente
+router.put('/:id/atribuir', authenticate, (req, res) => {
+  const { id } = req.params;
+  const { idAtendente } = req.body;
+
+  // Verificar se o usuário autenticado é admin
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Permissão negada' });
+  }
+
+  const query = 'UPDATE conversas SET idAtendente = ? WHERE id = ?';
+  db.query(query, [idAtendente, id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Conversa atribuída com sucesso' });
   });
 });
 
