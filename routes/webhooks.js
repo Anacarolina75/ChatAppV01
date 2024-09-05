@@ -1,104 +1,60 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../banco/db'); // Supondo que você tenha configurado sua conexão MySQL
+const db = require('../banco/db');
 
-router.post('/webhooks', async (req, res) => {
-  try {
-    const { servidor, telefoneCliente, mensagem } = req.body;
+module.exports = (io) => {
+  router.post('/', async (req, res) => {
+    try {
+      const { numero, texto } = req.body;
+      
+      // Identificar o servidor pelo número
+      const servidorQuery = 'SELECT * FROM servidor WHERE numero = ?';
+      const [servidores] = await db.promise().query(servidorQuery, [numero]);
+      
+      if (servidores.length === 0) {
+        return res.status(404).json({ message: 'Servidor não encontrado' });
+      }
 
-    // Validar os dados recebidos
-    if (!servidor || !telefoneCliente || !mensagem) {
-      return res.status(400).json({ error: 'Dados insuficientes' });
-    }
-
-    // Passo 2: Verificar se o cliente já existe no banco de dados
-    const [cliente] = await db.query(
-      'SELECT * FROM clientes WHERE telefone = ?',
-      [telefoneCliente]
-    );
-
-    let clienteId;
-    if (cliente) {
-      clienteId = cliente.id;
-    } else {
-      // Se o cliente não existir, criar um novo cliente
-      const [novoCliente] = await db.query(
-        'INSERT INTO clientes (nome, telefone) VALUES (?, ?)',
-        [telefoneCliente, telefoneCliente] // Aqui, o nome do cliente será o número até que um nome seja fornecido
-      );
-      clienteId = novoCliente.insertId;
-    }
-
-    // Passo 3: Verificar se já existe uma conversa para o cliente
-    const [conversa] = await db.query(
-      'SELECT * FROM conversas WHERE idCliente = ? AND arquivada = FALSE',
-      [clienteId]
-    );
-
-    let conversaId;
-    if (conversa) {
-      conversaId = conversa.id;
-    } else {
-      // Se não houver conversa, criar uma nova
-      const [novaConversa] = await db.query(
-        'INSERT INTO conversas (idCliente) VALUES (?)',
-        [clienteId]
-      );
-      conversaId = novaConversa.insertId;
-    }
-
-    // Passo 4: Inserir a mensagem na tabela de mensagens
-    await db.query(
-      'INSERT INTO mensagens (idConversa, texto, dataEnvio) VALUES (?, ?, NOW())',
-      [conversaId, mensagem]
-    );
-
-    return res.status(200).json({ message: 'Mensagem processada com sucesso' });
-  } catch (error) {
-    console.error('Erro ao processar webhook:', error);
-    return res.status(500).json({ error: 'Erro no servidor' });
-  }
-});
-
-module.exports = router;
-
-
-  /* identificar o servidor atraves do numero que vem na const servidor e verificar se nesse servidor existe cadastrado o numero originario
-    se já existir (contato) no servidor vou adicionar a mensagem ao contato
-    se não existir o contato irei criar dentro do servidor e adicionar a mensagem ao contato 
-  */
-
-
-/*
-  // Verifica se o cliente já existe no banco
-  db.query('SELECT id FROM clientes WHERE telefone = ?', [from], (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (results.length === 0) {
-      db.query('INSERT INTO clientes (telefone) VALUES (?)', [from], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const clienteId = result.insertId;
-        criarConversa(clienteId, text);
-      });
-    } else {
-      const clienteId = results[0].id;
-      criarConversa(clienteId, text);
+      // Verificar se o número já está cadastrado como contato
+      const contatoQuery = 'SELECT * FROM clientes WHERE telefone = ?';
+      const [contatos] = await db.promise().query(contatoQuery, [numero]);
+      
+      if (contatos.length > 0) {
+        const cliente_id = contatos[0].cliente_id;
+        const conversaQuery = 'SELECT * FROM conversas WHERE cliente_id = ? AND atendente_id IS NOT NULL';
+        const [conversas] = await db.promise().query(conversaQuery, [cliente_id]);
+        
+        if (conversas.length > 0) {
+          const conversa_id = conversas[0].conversa_id;
+          const mensagemQuery = 'INSERT INTO mensagens (conversa_id, texto) VALUES (?, ?)';
+          await db.promise().query(mensagemQuery, [conversa_id, texto]);
+          
+          io.emit('mensagemRecebida', { cliente_id, texto });
+          
+          return res.status(200).json({ message: 'Mensagem adicionada ao contato existente' });
+        }
+      }
+      
+      // Criar novo contato e adicionar a mensagem
+      const clienteQuery = 'INSERT INTO clientes (telefone) VALUES (?)';
+      const [result] = await db.promise().query(clienteQuery, [numero]);
+      const novo_cliente_id = result.insertId;
+      
+      const novaConversaQuery = 'INSERT INTO conversas (cliente_id) VALUES (?)';
+      const [novaConversa] = await db.promise().query(novaConversaQuery, [novo_cliente_id]);
+      const nova_conversa_id = novaConversa.insertId;
+      
+      const novaMensagemQuery = 'INSERT INTO mensagens (conversa_id, texto) VALUES (?, ?)';
+      await db.promise().query(novaMensagemQuery, [nova_conversa_id, texto]);
+      
+      io.emit('mensagemRecebida', { cliente_id: novo_cliente_id, texto });
+      
+      res.status(201).json({ message: 'Novo contato criado e mensagem adicionada' });
+    } catch (error) {
+      console.error('Erro no webhook:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
     }
   });
 
-  const criarConversa = (clienteId, texto) => {
-    db.query('INSERT INTO conversas (idCliente) VALUES (?)', [clienteId], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      const conversaId = result.insertId;
-
-      db.query('INSERT INTO mensagens (idConversa, texto) VALUES (?, ?)', [conversaId, texto], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.sendStatus(200);
-      });
-    });
-  };
-});
-*/
-
-
-
+  return router;
+};

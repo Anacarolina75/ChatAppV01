@@ -2,95 +2,67 @@ const express = require('express');
 const router = express.Router();
 const db = require('../banco/db');
 
-// Listar todas as mensagens de uma conversa específica
-router.get('/:idConversa', (req, res) => {
-  const { idConversa } = req.params;
-  const query = 'SELECT * FROM mensagens WHERE idConversa = ?';
-  db.query(query, [idConversa], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(results);
+module.exports = (io) => {
+  // Listar todas as mensagens de uma conversa específica
+  router.get('/:conversa_id', (req, res) => {
+    const { conversa_id } = req.params;
+    const query = 'SELECT * FROM mensagens WHERE conversa_id = ?';
+    db.query(query, [conversa_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(results);
+    });
   });
-});
 
-// Adicionar uma nova mensagem
-router.post('/', (req, res) => {
-  const { idConversa, idAtendente, texto, tipoMidia, caminhoMidia } = req.body;
-  const query = 'INSERT INTO mensagens (idConversa, idAtendente, texto, tipoMidia, caminhoMidia) VALUES (?, ?, ?, ?, ?)';
-  db.query(query, [idConversa, idAtendente, texto, tipoMidia, caminhoMidia], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ id: results.insertId, idConversa, idAtendente, texto, tipoMidia, caminhoMidia });
+  // Adicionar uma nova mensagem a uma conversa existente
+  router.post('/:conversa_id', (req, res) => {
+    const { conversa_id } = req.params;
+    const { atendente_id, texto, tipoMidia, caminhoMidia } = req.body;
+    const sql = 'INSERT INTO mensagens (conversa_id, atendente_id, texto, tipoMidia, caminhoMidia) VALUES (?, ?, ?, ?, ?)';
+    db.query(sql, [conversa_id, atendente_id, texto, tipoMidia, caminhoMidia], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      const novaMensagem = {
+        conversa_id,
+        atendente_id,
+        texto,
+        tipoMidia,
+        caminhoMidia
+      };
+
+      // Emitir o evento da nova mensagem via Socket.IO
+      io.emit('mensagemRecebida', novaMensagem);
+
+      res.json({ message: 'Mensagem enviada com sucesso' });
+    });
   });
-});
 
-// Atualizar uma mensagem existente
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  const { texto, tipoMidia, caminhoMidia } = req.body;
-  const query = 'UPDATE mensagens SET texto = ?, tipoMidia = ?, caminhoMidia = ? WHERE id = ?';
-  db.query(query, [texto, tipoMidia, caminhoMidia, id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ id, texto, tipoMidia, caminhoMidia });
+  // Atualizar uma mensagem existente
+  router.put('/:mensagem_id', (req, res) => {
+    const { mensagem_id } = req.params;
+    const { texto, tipoMidia, caminhoMidia } = req.body;
+    const query = 'UPDATE mensagens SET texto = ?, tipoMidia = ?, caminhoMidia = ? WHERE mensagem_id = ?';
+    db.query(query, [texto, tipoMidia, caminhoMidia, mensagem_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ mensagem_id, texto, tipoMidia, caminhoMidia });
+    });
   });
-});
 
-// Excluir uma mensagem
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  const query = 'DELETE FROM mensagens WHERE id = ?';
-  db.query(query, [id], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ message: 'Mensagem excluída com sucesso' });
+  // Excluir uma mensagem
+  router.delete('/:mensagem_id', (req, res) => {
+    const { mensagem_id } = req.params;
+    const query = 'DELETE FROM mensagens WHERE mensagem_id = ?';
+    db.query(query, [mensagem_id], (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: 'Mensagem excluída com sucesso' });
+    });
   });
-});
 
-
-async function adicionarMensagem(servidor, contato, mensagem) {
-  try {
-    // Passo 1: Buscar o servidor
-    let [servidores] = await db.execute('SELECT id FROM servidores WHERE nome = ?', [servidor]);
-    let servidor = servidores[0];
-    let servidorId;
-
-    if (servidor) {
-      servidorId = servidor.id;
-    } else {
-      // Criar um novo servidor se não existir
-      const [result] = await db.execute('INSERT INTO servidores (nome) VALUES (?)', [servidor]);
-      servidorId = result.insertId;
-    }
-
-    // Passo 2: Buscar o contato
-    let [contatos] = await db.execute(
-      'SELECT id, mensagens FROM contatos WHERE servidor_id = ? AND email = ?',
-      [servidorId, contatoEmail]
-    );
-    let contato = contatos[0];
-
-    if (contato) {
-      // Atualizar as mensagens do contato existente
-      const mensagensAtualizadas = contato.mensagens + '\n' + mensagem;
-      await db.execute('UPDATE contatos SET mensagens = ? WHERE id = ?', [mensagensAtualizadas, contato.id]);
-    } else {
-      // Criar um novo contato e adicionar a mensagem
-      await db.execute(
-        'INSERT INTO contatos (servidor_id, email, mensagens) VALUES (?, ?, ?)',
-        [servidorId, contatoEmail, mensagem]
-      );
-    }
-
-    console.log('Mensagem adicionada com sucesso!');
-  } catch (error) {
-    console.error('Erro ao adicionar mensagem:', error);
-  }
-}
-
-
-module.exports = router;
+  return router;
+};

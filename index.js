@@ -1,50 +1,43 @@
+
 const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
+const http = require('http');
 const socketIo = require('socket.io');
 const dotenv = require('dotenv');
-const http = require('http');
+const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
-const webhook = require('./routes/webhooks')
+const db = require('./banco/db');
 
-app.use(bodyParser.json());
+// Configura dotenv para carregar variáveis de ambiente
 dotenv.config();
 
-// Importando e utilizando as rotas
-app.use('/auths', require('./routes/auths'));
-app.use('/webhooks', require('./routes/webhooks'));
-app.use('/clientes', require('./routes/clientes'));
-app.use('/conversas', require('./routes/conversas'));
-app.use('/mensagens', require('./routes/mensagens'));
-app.use('/tags', require('./routes/tags'));
-app.use('/atendentes', require('./routes/atendentes'));
-
-
-
+const app = express();
 const server = http.createServer(app);
+const io = socketIo(server);
 
-const io = socketIo(server, {
-  cors: {
-    origin: 'http://localhost:8000', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  }
-});
+// Middleware
+app.use(bodyParser.json());
 
+// Importando e utilizando as rotas
+const authRoutes = require('./routes/auths');
+const clienteRoutes = require('./routes/clientes');
+const conversaRoutes = require('./routes/conversas');
+const mensagemRoutes = require('./routes/mensagens');
+const tagRoutes = require('./routes/tags');
+const atendenteRoutes = require('./routes/atendentes');
 
-const PORT = process.env.PORT || 8000;
+// Configuração das rotas
+app.use('/auths', authRoutes);
+app.use('/clientes', clienteRoutes);
+app.use('/conversas', conversaRoutes(io)); // Passa o io para conversas
+app.use('/mensagens', mensagemRoutes(io)); // Passa o io para mensagens
+app.use('/tags', tagRoutes);
+app.use('/atendentes', atendenteRoutes);
 
-app.listen(PORT, () => {
-  console.log('Server is running on port 8000');
-});
+// Configuração das rotas de webhook
+const webhookRoutes = require('./routes/webhooks');
+app.use('/webhooks', webhookRoutes(io)); // Passa o io para webhooks
 
-const SOCKET_PORT = process.env.SOCKET_PORT || 3001;
-
-server.listen(SOCKET_PORT, () => {
-  console.log(`Servidor Socket.IO rodando na porta ${SOCKET_PORT}`);
-});
-
-
-// Evento de conexão do Socket.IO
+// Inicializa o Socket.IO
 io.on('connection', (socket) => {
   console.log('Novo cliente conectado:', socket.id);
 
@@ -60,9 +53,16 @@ io.on('connection', (socket) => {
   });
 });
 
+// Porta para o servidor HTTP
+const PORT = process.env.PORT;
 
-// Rota principal
-app.get('/', (req, res) => {
-    res.send('API do WhatsApp Clone');
-  });
+app.listen(PORT, () => {
+  console.log('Server is running on port 8000');
+});
 
+// Porta para o Socket.IO
+const SOCKET_PORT = process.env.SOCKET_PORT;
+
+server.listen(SOCKET_PORT, () => {
+  console.log(`Servidor Socket.IO rodando na porta ${SOCKET_PORT}`);
+});

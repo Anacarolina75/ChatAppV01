@@ -1,21 +1,21 @@
-// /middlewares/authMiddleware.js
-/*const admin = require('../firebase/firebase');
+const admin = require('../firebase/firebase');
 
 const authenticate = async (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(403).json({ message: 'Token não fornecido' });
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Token não fornecido' });
   }
+
+  const token = authHeader.replace('Bearer ', '');
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    req.user = decodedToken;
+    req.user = decodedToken; // Adiciona os dados do usuário ao objeto req
     next();
   } catch (error) {
-    return res.status(403).json({ message: 'Token inválido' });
+    res.status(401).json({ error: 'Token inválido' });
   }
 };
 
 module.exports = authenticate;
-*/
