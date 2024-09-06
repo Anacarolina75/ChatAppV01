@@ -11,7 +11,7 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const insertQuery = 'INSERT INTO atendentes (nome, email, password) VALUES (?, ?, ?)';
+    const insertQuery = 'INSERT INTO atendentes (nomeAtendente, email, password) VALUES (?, ?, ?)';
     await db.query(insertQuery, [nome, email, hashedPassword]);
 
     res.json({ message: 'Atendente cadastrado com sucesso!' });

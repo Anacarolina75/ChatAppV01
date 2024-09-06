@@ -13,7 +13,7 @@ const hashPassword = async (senha) => {
 // Função para salvar um atendente no banco de dados
 const saveAtendente = async (nome, email, senha) => {
   const hashedPassword = await hashPassword(senha);
-  await db.query('INSERT INTO atendentes (nome, email, senha) VALUES (?, ?, ?)', [nome, email, hashedPassword]);
+  await db.query('INSERT INTO atendentes (nomeAtendente, email, senha) VALUES (?, ?, ?)', [nome, email, hashedPassword]);
 };
 
 // Rota para registrar um atendente

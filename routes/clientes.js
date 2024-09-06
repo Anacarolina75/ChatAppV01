@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 // Adicionar um novo cliente
 router.post('/', (req, res) => {
   const { nome, telefone, email, foto } = req.body;
-  const query = 'INSERT INTO clientes (nome, telefone, email, foto) VALUES (?, ?, ?, ?)';
+  const query = 'INSERT INTO clientes (numeroCliente, nomeCliente, email, foto) VALUES (?, ?, ?, ?)';
   db.query(query, [nome, telefone, email, foto], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
