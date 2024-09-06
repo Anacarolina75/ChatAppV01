@@ -1,55 +1,35 @@
 const express = require('express');
-const router = express.Router();
+const bcrypt = require('bcryptjs');
 const db = require('../banco/db');
+const router = express.Router();
 
-  
-  // Listar todos os atendentes
-  router.get('/', (req, res) => {
-    const query = 'SELECT * FROM atendentes';
-    db.query(query, (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(results);
-    });
-  });
+// Rota para criar um novo atendente
+router.post('/register', async (req, res) => {
+  const { nome, email, password } = req.body;
 
-  // Adicionar um novo atendente
-  router.post('/', (req, res) => {
-    const { nome, email, tagUsuario } = req.body;
-    const query = 'INSERT INTO atendentes (nome, email, tagUsuario) VALUES (?, ?, ?)';
-    db.query(query, [nome, email, tagUsuario], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ id: results.insertId, nome, email, tagUsuario });
-    });
-  });
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  // Atualizar um atendente existente
-  router.put('/:id', (req, res) => {
-    const { id } = req.params;
-    const { nome, email, tagUsuario } = req.body;
-    const query = 'UPDATE atendentes SET nome = ?, email = ?, tagUsuario = ? WHERE id = ?';
-    db.query(query, [nome, email, tagUsuario, id], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ id, nome, email, tagUsuario });
-    });
-  });
+    const insertQuery = 'INSERT INTO atendentes (nome, email, password) VALUES (?, ?, ?)';
+    await db.query(insertQuery, [nome, email, hashedPassword]);
 
-  // Excluir um atendente
-  router.delete('/:id', (req, res) => {
-    const { id } = req.params;
-    const query = 'DELETE FROM atendentes WHERE id = ?';
-    db.query(query, [id], (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({ message: 'Atendente excluído com sucesso' });
-    });
-  });
+    res.json({ message: 'Atendente cadastrado com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao cadastrar atendente:', error);
+    res.status(500).json({ message: 'Erro no servidor' });
+  }
+});
 
-  module.exports = router;
+// Rota para listar atendentes
+router.get('/', async (req, res) => {
+  try {
+    const atendentes = await db.query('SELECT * FROM atendentes');
+    res.json(atendentes);
+  } catch (error) {
+    console.error('Erro ao listar atendentes:', error);
+    res.status(500).json({ message: 'Erro no servidor' });
+  }
+});
 
+module.exports = router;

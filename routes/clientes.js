@@ -15,26 +15,26 @@ router.get('/', (req, res) => {
 
 // Adicionar um novo cliente
 router.post('/', (req, res) => {
-  const { nome, telefone, email } = req.body;
-  const query = 'INSERT INTO clientes (nome, telefone, email) VALUES (?, ?, ?)';
-  db.query(query, [nome, telefone, email], (err, results) => {
+  const { nome, telefone, email, foto } = req.body;
+  const query = 'INSERT INTO clientes (nome, telefone, email, foto) VALUES (?, ?, ?, ?)';
+  db.query(query, [nome, telefone, email, foto], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    res.json({ id: results.insertId, nome, telefone, email });
+    res.json({ id: results.insertId, nome, telefone, email, foto });
   });
 });
 
 // Atualizar um cliente existente
 router.put('/:id', (req, res) => {
   const { id } = req.params;
-  const { nome, telefone, email } = req.body;
-  const query = 'UPDATE clientes SET nome = ?, telefone = ?, email = ? WHERE id = ?';
-  db.query(query, [nome, telefone, email, id], (err, results) => {
+  const { nome, telefone, email, foto } = req.body;
+  const query = 'UPDATE clientes SET nome = ?, telefone = ?, email = ?, foto = ?, WHERE id = ?';
+  db.query(query, [nome, telefone, email, foto, id], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    res.json({ id, nome, telefone, email });
+    res.json({ id, nome, telefone, email, foto });
   });
 });
 
